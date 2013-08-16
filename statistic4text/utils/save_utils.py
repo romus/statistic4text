@@ -2,6 +2,7 @@
 
 __author__ = 'romus'
 
+import datetime
 from abc import ABCMeta, abstractmethod
 import pymongo
 
@@ -12,12 +13,13 @@ class SaveUtils():
 	__metaclass__ = ABCMeta
 
 	@abstractmethod
-	def saveDict(self, dictName, dictNameEncode, data, dataEncode, dateIndex):
+	def saveDict(self, dictName, dictNameEncode, dictSize, data, dataEncode, dateIndex):
 		"""
 		Сохранить словарь с данными
 
 		:param dictName:  имя словаря (utf-8)
 		:param dictNameEncode:  кодировка имени словаря
+		:param dictSize:  размер словаря (файла) в kB
 		:param data:  данные. Пример, {слово: частота_слова_в_словаре, ...} (utf-8)
 		:param dataEncode:  кодировка данных словаря
 		:param dateIndex: дата создания индекса по словарю
@@ -38,17 +40,37 @@ class SaveUtils():
 
 	@abstractmethod
 	def mergeDicts(self):
-		""" Слияние всех словарей, которые до этого были сохранены """
+		"""
+		Слияние всех словарей, которые до этого были сохранены
+
+		:return:  id результирующего словаря
+		"""
+		return -1
+
+	@abstractmethod
+	def deleteMergeDict(self):
+		""" Удалить итоговой словарь """
 		pass
+
+	@abstractmethod
+	def deleteDicts(self):
+		""" Удалить все созданные данные по словарям (файлам) """
+		pass
+
+	@abstractmethod
+	def getMergeDictID(self):
+		""" Получить id итогового словаря """
+		return -1
 
 
 class MongoSaveUtils(SaveUtils):
 	""" Сохранение индексных данных в mongodb """
 
-	INDEX_FIELDS_FILES_COLLECTION = []
+	INDEX_FIELDS_FILES_COLLECTION = [("dict_type", pymongo.DESCENDING)]
 	INDEX_FIELDS_DATA_FILES_COLLECTION = [("word", pymongo.DESCENDING), ("dict_id", pymongo.DESCENDING)]
 
-	def __init__(self, host, port, user, password, databaseName, filesCollectionName, dataFilesCollectionName):
+	def __init__(self, host, port, user, password, databaseName, filesCollectionName, dataFilesCollectionName,
+				 mergeDictName="merge_dict", isDeleteAll=False):
 		"""
 		Инициализация
 
@@ -56,14 +78,25 @@ class MongoSaveUtils(SaveUtils):
 		:param port:  порт
 		:param user:  пользователь
 		:param password:  пароль
+		:param databaseName:  имя базы
+		:param filesCollectionName:  имя коллекции для описания свойств сохраняемых словарей (файлов)
+		:param dataFilesCollectionName:  имя коллекции для хранения данных словарей (файлов)
+		:param mergeDictName:  имя словаря (по-умолчанию - "merge_dict") для наименования слияния словарей
+		:param isDeleteAll:  удалять все старые данные из коллекций (по-умолчанию - false)
 		"""
 		self.__client = pymongo.MongoClient(host=host, port=port)
 		self.__db = self.__client[databaseName]
 		self.__db.authenticate(user, password)
 		self.__filesCollection = self.__db[filesCollectionName]
 		self.__dataFilesCollection = self.__db[dataFilesCollectionName]
-		self.__filesCollection.remove()
-		self.__dataFilesCollection.remove()
+
+		if isDeleteAll:  # если необходимо удалить старые данные
+			self.__filesCollection.remove()
+			self.__dataFilesCollection.remove()
+
+		# сразу создаётся итоговый словарь
+		self.__mergeDictID = self.__filesCollection.insert({"dict_name": mergeDictName, "dict_type": 2,
+															"date_index": datetime.datetime.now()})
 
 		# создание индекса для коллекций файлов и данных по файлам
 		if len(self.INDEX_FIELDS_FILES_COLLECTION) > 0:
@@ -71,23 +104,78 @@ class MongoSaveUtils(SaveUtils):
 		if len(self.INDEX_FIELDS_DATA_FILES_COLLECTION) > 0:
 			self.__dataFilesCollection.create_index(self.INDEX_FIELDS_DATA_FILES_COLLECTION)
 
-	def saveDict(self, dictName, dictNameEncode, data, dataEncode, dateIndex):
+	def saveDict(self, dictName, dictNameEncode, dictSize, data, dataEncode, dateIndex):
+		self.__checkExistMergeDict()
+
 		dictID = self.__filesCollection.insert({"dict_name": dictName, "dict_name_encode": dictNameEncode,
-												"data_encode": dataEncode, "dict_type": 1,
-												"date_index": dateIndex})
+												"dict_size": dictSize, "data_encode": dataEncode,
+												"dict_type": 1, "date_index": dateIndex,
+												"merge_dict_id": self.__mergeDictID})
 		for key, value in data.iteritems():
-			self.__dataFilesCollection.insert({"word": key, "df": value, "dict_id": dictID})
+			self.__dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID})
 
 		return dictID
 
 	def add2Dict(self, dictID, data):
+		self.__checkExistMergeDict()
+
+		checkFile = self.__filesCollection.find_one({"_id": dictID})
+		if not checkFile:  # если файла в коллекции файлов нет
+			return
+
 		for key, value in data.iteritems():
-			pass
 			word = self.__dataFilesCollection.find_one({"dict_id": dictID, "word": key})
-			if word:  # обновляем документальную частоту
-				self.__dataFilesCollection.update({"_id": word['_id']}, {"$set": {"df": word['df'] + value}})
+			if word:  # обновляем частоту терминов в документе (term frequency - tf)
+				self.__dataFilesCollection.update({"_id": word['_id']}, {"$set": {"tf": word['tf'] + value}})
 			else:  # вставляем новую запись
-				self.__dataFilesCollection.insert({"word": key, "df": value, "dict_id": dictID})
+				self.__dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID})
 
 	def mergeDicts(self):
-		pass
+		self.__checkExistMergeDict()
+
+		# найдем все файлы, по которым раннее строился индекс
+		files = self.__filesCollection.find({"dict_type": 1, "merge_dict_id": self.__mergeDictID}, fields=["_id"])
+		for itemFile in files:
+			# найдем все данные по словарю (файлу)
+			words = self.__dataFilesCollection.find({"dict_id": itemFile["_id"]}, fields=["word", "tf"])
+			for itemWord in words:
+				# найти слово в итоговом словаре
+				mergeWord = self.__dataFilesCollection.find_one(
+					{"dict_id": self.__mergeDictID, "word": itemWord['word']})
+				if mergeWord:  # обновление существующей записи
+					self.__dataFilesCollection.update({"_id": mergeWord['_id']},
+													  {"$set": {"cf": mergeWord['cf'] + itemWord['tf'],
+																"df": mergeWord['df'] + 1}})
+				else:  # добавление новой записи
+					self.__dataFilesCollection.insert({"dict_id": self.__mergeDictID, "word": itemWord['word'],
+													   "cf": itemWord['tf'], "df": 1})
+
+		return self.__mergeDictID
+
+	def deleteMergeDict(self):
+		self.__checkExistMergeDict()
+
+		self.deleteDicts()
+		self.__filesCollection.remove({"_id": self.__mergeDictID})
+		self.__dataFilesCollection.remove({"dict_id": self.__mergeDictID})
+		self.__mergeDictID = None
+
+	def deleteDicts(self):
+		self.__checkExistMergeDict()
+
+		files = self.__filesCollection.find({"merge_dict_id": self.__mergeDictID}, fields=["_id"])
+		if files:
+			for itemFile in files:  # удаление всех данных из созданных словарей
+				self.__dataFilesCollection.remove({"dict_id": itemFile["_id"]})
+
+		# удаление самих словарей (файлов)
+		self.__filesCollection.remove({"merge_dict_id": self.__mergeDictID})
+
+	def getMergeDictID(self):
+		return  self.__mergeDictID
+
+	def __checkExistMergeDict(self):
+		""" Проверка на существование итогового словаря. Если словаря нет, то выбрасывается исключение. """
+
+		if not self.__mergeDictID:  # если нет документа итогового словаря
+			raise Exception("All created data was removed (was invoked deleteMergeDict() method)")
