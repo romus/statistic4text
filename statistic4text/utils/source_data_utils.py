@@ -83,6 +83,7 @@ class FileBlockSource(FileSource):
 		"""
 		Инициализация
 
+
 		:param blockSize:  размер блока для чтения за один раз
 		:param maxSizeLastString: по-умолчанию - 300
 		:param listSeparators:  список с разделителями. По-умолчанию (если None) - [" ", "\n"]
