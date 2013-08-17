@@ -3,7 +3,6 @@
 
 __author__ = 'romus'
 
-
 import re
 import unicodedata
 import chardet
@@ -127,7 +126,7 @@ class SimpleNormalization(Normalization):
 			except Exception as e:
 				print("Error parse {0}".format(str(e)))
 
-		return [self.__detectEncoding.encodeText(item.encode("utf-8"), self.getNormalizeTextEncode()) for item in n_w]
+		return [self.__detectEncoding.encodeText(item.encode(self.__defaultEncodeText), self.getNormalizeTextEncode()) for item in n_w]
 
 	def normalizeTextWithoutRepetition(self, text):
 		return list(set(self.normalizeText(text)))
