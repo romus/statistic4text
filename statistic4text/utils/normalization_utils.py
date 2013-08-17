@@ -90,7 +90,8 @@ class SimpleNormalization(Normalization):
 
 	def __init__(self):
 		self.__detectEncoding = DetectEncoding()
-		self.setNormalizeTextEncode("utf-8")
+		self.__defaultEncodeText = "utf-8"
+		self.setNormalizeTextEncode(self.__defaultEncodeText)
 		self.__diacritics = re.compile(u'[\u0300-\u036f\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]', re.U)
 		self.__detection = Detection()
 		self.__porterStemming = PorterStemming()
@@ -99,12 +100,11 @@ class SimpleNormalization(Normalization):
 		if not text:
 			raise ParamError("Text is not to be None or ''")
 
-		textEncode = self.__detectEncoding.getEncode(text)
-		dt = self.__detectEncoding.encodeText(text, self.getNormalizeTextEncode())  # dt = decode text
-		ndt = self.__diacritics.sub('', unicodedata.normalize('NFD', unicode(dt, "UTF-8")))  # normalize
+		dt = self.__detectEncoding.encodeText(text, self.__defaultEncodeText)  # dt = decode text
+		ndt = self.__diacritics.sub('', unicodedata.normalize('NFD', unicode(dt, self.__defaultEncodeText)))
 		ndt = ndt.lower().replace("\n", " ").strip()
 
-		normalize_words = []
+		n_w = []  # normalize words
 		if ndt:
 			temp_normalize_words = re.split('\s+', ndt)
 			for word in temp_normalize_words:
@@ -120,14 +120,14 @@ class SimpleNormalization(Normalization):
 
 				# чтобы не добавлять пустые строки. Пример ""
 				if normalize_word:
-					normalize_words.append(normalize_word)
+					n_w.append(normalize_word)
 		else:
 			try:
-				normalize_words = re.split('\s+', ndt)
+				n_w = re.split('\s+', ndt)
 			except Exception as e:
 				print("Error parse {0}".format(str(e)))
 
-		return normalize_words
+		return [self.__detectEncoding.encodeText(item.encode("utf-8"), self.getNormalizeTextEncode()) for item in n_w]
 
 	def normalizeTextWithoutRepetition(self, text):
 		return list(set(self.normalizeText(text)))
