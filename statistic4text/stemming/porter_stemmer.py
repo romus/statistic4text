@@ -3,7 +3,7 @@
 __author__ = 'romus'
 
 import re
-from ir.stemming.porter import stem
+from statistic4text.stemming.porter import stem
 
 
 class PorterStemming(object):

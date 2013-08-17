@@ -13,5 +13,5 @@ setup(
                 "Python packages",
     author="romus",
     author_email="vkromus@gmail.com",
-    license="GPL v3", requires=['pymongo'],
+    license="GPL v3", requires=['pymongo', 'chardet'],
 )

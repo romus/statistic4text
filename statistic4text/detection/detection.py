@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
+
 __author__ = 'romus'
+
 
 ABC_RUS = [1040, 1103, [1025, 1105]]
 ABC_ENG = [65, 122]
 
 
 class Detection(object):
+
     def __init__(self):
         super(Detection, self).__init__()
 
