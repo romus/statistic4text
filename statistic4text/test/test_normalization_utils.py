@@ -5,7 +5,7 @@ __author__ = 'romus'
 
 
 import unittest
-from statistic4text.utils.normalization_utils import DetectEncoding
+from statistic4text.utils.normalization_utils import DetectEncoding, SimpleNormalization
 
 
 class TestDetectEncoding(unittest.TestCase):
@@ -39,6 +39,29 @@ class TestDetectEncoding(unittest.TestCase):
 	def testEncodeLookupError(self):
 		with open("resources/test_encode_win1251") as win1251File:
 			self.assertRaises(LookupError, self.__detectEncoding.encodeText, win1251File.read(), "utf-8_test_")
+
+
+class TestSimpleNormalization(unittest.TestCase):
+
+	def setUp(self):
+		self.__simpleNormalization = SimpleNormalization()
+		self.__normalizeWords = ["thi", "test", "file", "encod", "проверк", "определен", "кодировк", "фа"]
+
+	def testNormalizeText(self):
+		with open("resources/test_encode_utf8") as utf8File:
+			words = self.__simpleNormalization.normalizeText(utf8File.read())
+			for itemWord in words:
+				self.assertIn(itemWord, self.__normalizeWords, "not normalized test_encode_utf8")
+
+		with open("resources/test_encode_win1251") as win1251File:
+			words = self.__simpleNormalization.normalizeText(win1251File.read())
+			for itemWord in words:
+				self.assertIn(itemWord, self.__normalizeWords, "not normalized test_encode_win1251")
+
+		with open("resources/test_encode_win866") as win866File:
+			words = self.__simpleNormalization.normalizeText(win866File.read())
+			for itemWord in words:
+				self.assertIn(itemWord, self.__normalizeWords, "not normalized test_encode_win866")
 
 
 if __name__ == "__main__":

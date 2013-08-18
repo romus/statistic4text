@@ -107,7 +107,7 @@ class SimpleNormalization(Normalization):
 		if ndt:
 			temp_normalize_words = re.split('\s+', ndt)
 			for word in temp_normalize_words:
-				unicode_word = self.__normalize_word(word)
+				unicode_word = self.__normalizeWord(word)
 
 				lang = self.__detection.detect(unicode_word)
 				normalize_word = unicode_word
@@ -147,7 +147,7 @@ class SimpleNormalization(Normalization):
 		"""
 		return self.__normalizeTextEncode
 
-	def __normalize_word(self, word):
+	def __normalizeWord(self, word):
 		"""
 		Убрать из начала и конца слова все символы не из алфавита
 
@@ -155,35 +155,35 @@ class SimpleNormalization(Normalization):
 		:return: нормализованное слово
 		"""
 
-		unicode_word = word
+		unicodeWord = word
 		try:
-			unicode_word = word.decode("utf-8")
+			unicodeWord = word.decode("utf-8")
 		except UnicodeEncodeError:
 			# print "UnicodeEncodeError"
 			pass
 
-		word_len = len(unicode_word)
+		wordLen = len(unicodeWord)
 
-		if word_len == 0:
-			return unicode_word
+		if wordLen == 0:
+			return unicodeWord
 
 		f_index = 0             # индекс первого символа
-		s_index = word_len - 1  # индекс последнего символа
+		s_index = wordLen - 1  # индекс последнего символа
 
 		# ищем позицию первого индекса
-		for x in range(0, word_len):
+		for x in range(0, wordLen):
 			f_index = x
-			if self.__detection.check_symbol(unicode_word[x]):
+			if self.__detection.check_symbol(unicodeWord[x]):
 				break
 
 		for x in range(s_index, f_index, -1):
 			s_index = x
-			if self.__detection.check_symbol(unicode_word[x]):
+			if self.__detection.check_symbol(unicodeWord[x]):
 				break
 
 		if f_index + 1 >= s_index:
-			return unicode_word[f_index]
+			return unicodeWord[f_index]
 
-		return unicode_word[f_index: s_index + 1]
+		return unicodeWord[f_index: s_index + 1]
 
 	normalizeTextEncode = property(getNormalizeTextEncode, setNormalizeTextEncode)
