@@ -3,7 +3,8 @@
 __author__ = 'romus'
 
 
-from abc import ABCMeta, abstractmethod
+import os
+from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class Source():
@@ -40,6 +41,52 @@ class Source():
 		"""
 		return None
 
+	@abstractmethod
+	def getName(self, source):
+		"""
+		Получить имя источника
+
+		:param source:  источник
+		:return:  имя источника
+		"""
+		return None
+
+	@abstractmethod
+	def getSourceSize(self, source):
+		"""
+		Получить размер данных источника в kB
+
+		:param source:  источник
+		:return:  размер данных источника
+		"""
+		return None
+
+
+class SourceCustom():
+	""" Настройки для работы источника """
+
+	__metaclass__ = ABCMeta
+
+	@abstractmethod
+	def setCustom(self, custom):
+		"""
+		Установить данные для работы с источником
+
+		:param custom:  данные для работы с источником
+		"""
+		pass
+
+	@abstractmethod
+	def getCustom(self):
+		"""
+		Получить данные для работы с источником
+
+		:return:  данные для работы с источником
+		"""
+		return None
+
+	custom = abstractproperty(getCustom, setCustom)
+
 
 class FileSource(Source):
 	""" Источник для работы с текстомыми файлами """
@@ -54,10 +101,7 @@ class FileSource(Source):
 		return open(custom)
 
 	def closeSource(self, source):
-		try:
-			source.close()
-		except Exception as e:
-			pass
+		source.close()
 
 	def read(self, source):
 		"""
@@ -75,6 +119,11 @@ class FileSource(Source):
 				break
 			yield line
 
+	def getName(self, source):
+		return os.path.abspath(source.name)
+
+	def getSourceSize(self, source):
+		return os.path.getsize(os.path.abspath(source.name)) / 1024
 
 class FileBlockSource(FileSource):
 	""" Источник для работы по блокам с текстовыми файлами """
@@ -168,3 +217,17 @@ class FileBlockSource(FileSource):
 						findSepIndex = tempSepIndex
 
 		return findSepIndex
+
+
+class FileSourceCustom(SourceCustom):
+
+	def __init__(self):
+		self.__custom = None
+
+	def getCustom(self):
+		return  self.__custom
+
+	def setCustom(self, custom):
+		self.__custom = custom
+
+	custom = property(getCustom, setCustom)

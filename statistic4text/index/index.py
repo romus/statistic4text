@@ -2,7 +2,17 @@
 
 __author__ = 'romus'
 
+
+import sys
+import datetime
 from abc import ABCMeta, abstractmethod, abstractproperty
+from statistic4text.errors.errors import ParamError
+from statistic4text.utils.save_utils import MongoSaveUtils
+from statistic4text.utils.source_data_utils import Source, SourceCustom
+from statistic4text.utils.normalization_utils import Normalization, DetectEncoding
+
+
+MONGO_TYPE = "mongo"
 
 
 class Index():
@@ -11,23 +21,24 @@ class Index():
 	__metaclass__ = ABCMeta
 
 	@abstractmethod
-	def makeDocIndex(self, sourceName, data, normalizationCallback=None):
+	def makeDocIndex(self, sourceName, ss, data, normalizationCallback):
 		"""
 		Формирование индекса по файлу
 
 		:param sourceName:  полное имя источника (в любой кодировке)
+		:param ss:  source size - размер данных источника в kB
 		:param data:  данные из файла (список строк в любой кодировке)
 		:param normalizationCallback:  колбэк для нормализации файла (если None, то разделение слов по пробелу)
 		"""
 		pass
 
 	@abstractmethod
-	def makeDocIndex(self, fileName, openFileCallback, normalizationCallback=None):
+	def makeDocIndexCustom(self, openSourceCallback, sourceCustom, normalizationCallback):
 		"""
 		Формирование индекса по файлу
 
-		:param fileName: полное имя файла (в любой кодировке)
-		:param openFileCallback:  колбэк для получения данных из файла
+		:param openSourceCallback:  колбэк для получения данных из файла
+		:param sourceCustom:  настройки для работы источника
 		:param normalizationCallback:  колбэк для нормализации файла (если None, то разделение слов по пробелу)
 		"""
 		pass
@@ -56,15 +67,60 @@ class MongoIndex(Index):
 	def __init__(self, mongoUtils):
 		self.__bufferSize = 2048
 		self.__mongoUtils = mongoUtils
+		self.__bufferDictID = None
+		self.__bufferDict = {}
+		self.__detectEncoding = DetectEncoding()
 
-	def makeDocIndex(self, sourceName, data, normalizationCallback=None):
-		pass
+	def makeDocIndex(self, sourceName, ss, data, normalizationCallback):
+		if not normalizationCallback:
+			raise ParamError("normalizationCallback not to be a None")
 
-	def makeDocIndex(self, fileName, openFileCallback, normalizationCallback=None):
-		pass
+		if not isinstance(normalizationCallback, Normalization):
+			raise ParamError("normalizationCallback is not instance Normalization")
+
+		sen = self.__detectEncoding.getEncode(sourceName)
+		sde = normalizationCallback.getNormalizeTextEncode()
+		sdc = datetime.datetime.now()
+		normalizeData = normalizationCallback.normalizeText(data)  # нормализация полученного текста
+		self.__makeDocIndex(normalizeData, True, sourceName, sen, ss, sde, sdc)  # сохранение
+		self.__saveDict(True)  # сохранение словаря, если он что-то содержит
+
+	def makeDocIndexCustom(self, openSourceCallback, sourceCustom, normalizationCallback):
+		if not openSourceCallback or not normalizationCallback or not sourceCustom:
+			raise ParamError("openSourceCallback or normalizationCallback or sourceCustom  not to be a None")
+
+		if not isinstance(openSourceCallback, Source):
+			raise ParamError("openSourceCallback is not instance Source")
+
+		if not isinstance(sourceCustom, SourceCustom):
+			raise ParamError("sourceCustom is not instance SourceCustom")
+
+		if not isinstance(normalizationCallback, Normalization):
+			raise ParamError("normalizationCallback is not instance Normalization")
+
+		openSource = openSourceCallback.openSource(sourceCustom.getCustom())
+		isSave = True
+		for itemData in openSourceCallback.read(openSource):
+			try:
+				normalizeData = normalizationCallback.normalizeText(itemData)  # нормализация полученного текста
+				if isSave:  # добавление нового словарного индекса
+					sn = openSourceCallback.getName(openSource)  # имя
+					sen = self.__detectEncoding.getEncode(sn)
+					ss = openSourceCallback.getSourceSize(openSource)  # размер в kB
+					sde = normalizationCallback.getNormalizeTextEncode()
+					sdc = datetime.datetime.now()
+					self.__makeDocIndex(normalizeData, isSave, sn, sen, ss, sde, sdc)  # сохранение
+					isSave = False
+				else:  # добавление данных к уже существующему индексу
+					self.__makeDocIndex(normalizeData, isSave)
+			except ParamError:
+				pass
+		self.__saveDict(True)  # сохранение словаря, если он что-то содержит
+
+		openSourceCallback.closeSource(openSource)
 
 	def makeTotalIndex(self):
-		super(MongoIndex, self).makeTotalIndex()
+		self.__mongoUtils.mergeDicts()
 
 	def getBufferSize(self):
 		return self.__bufferSize
@@ -72,4 +128,63 @@ class MongoIndex(Index):
 	def setBufferSize(self, bufferSize):
 		self.__bufferSize = bufferSize
 
+	def __makeDocIndex(self, data, createNewDocIndex=False, sn=None, sen=None, ss=0, sde=None, sdc=None):
+		"""
+		Создание индекса по документу
+
+		:param data:  данные для индекса
+		:param createNewDocIndex:  создавать ли новый индекс по документу (True - да)
+		:param sn:  source name - имя источника  (для создания индекса)
+		:param sen:  sourceEncodeName - кодировка имени источника
+		:param ss:  source size - размер всех данных источника
+		:param sde:  source data encode - кодировка данных источника
+		:param sdc:  source data created - дата создания индекса по источнику
+		"""
+		if createNewDocIndex:  # создание нового документа
+			self.__bufferDictID = self.__mongoUtils.saveDict(sn, sen, ss, {}, sde, sdc)
+
+		for itemWord in data:  # добавление слов в словарь
+			if itemWord in self.__bufferDict:
+				self.__bufferDict[itemWord] += 1
+			else:
+				self.__bufferDict[itemWord] = 1
+
+			sizeDict = sys.getsizeof(self.__bufferDict, -1)
+			if sizeDict == -1:
+				raise TypeError("Object does not provide means to retrieve the size (see docs)")
+			if sizeDict > self.getBufferSize() * 1024:
+				self.__saveDict()
+
+	def __saveDict(self, cleanDictID=False):
+		"""
+		Сохранение данных своваря
+
+		:param cleanDictID:  true - удалить сключ словаря
+		"""
+		if self.__bufferDictID and self.__bufferDict:
+			self.__mongoUtils.add2Dict(self.__bufferDictID, self.__bufferDict)
+			self.__bufferDict = {}  # обновление словаря
+			if cleanDictID:  # обновление ключа
+				self.__bufferDictID = None
+
 	bufferSize = property(getBufferSize, setBufferSize)
+
+
+class IndexFactory():
+
+	def createIndex(self, indexType, saveUtil):
+		"""
+		Создание индексатора
+
+		:param indexType:  тип создаваемоего объекта
+		"""
+		if not indexType:
+			raise ParamError("indexType is not None or ''")
+
+		retObject = None
+		if indexType == MONGO_TYPE:
+			if not isinstance(saveUtil, MongoSaveUtils):
+				raise ParamError("saveUtil is not instance MongoSaveUtils")
+			retObject = MongoIndex(saveUtil)
+
+		return retObject
