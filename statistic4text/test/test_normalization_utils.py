@@ -5,6 +5,7 @@ __author__ = 'romus'
 
 
 import unittest
+from statistic4text.errors.errors import ParamError
 from statistic4text.utils.normalization_utils import DetectEncoding, SimpleNormalization
 
 
@@ -62,6 +63,10 @@ class TestSimpleNormalization(unittest.TestCase):
 			words = self.__simpleNormalization.normalizeText(win866File.read())
 			for itemWord in words:
 				self.assertIn(itemWord, self.__normalizeWords, "not normalized test_encode_win866")
+
+	def testNormalizeTextParamError(self):
+		self.assertRaises(ParamError, self.__simpleNormalization.normalizeText, None)
+		self.assertRaises(ParamError, self.__simpleNormalization.normalizeText, "")
 
 
 if __name__ == "__main__":
