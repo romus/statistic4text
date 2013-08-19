@@ -44,7 +44,7 @@ class Source():
 	@abstractmethod
 	def getName(self, source):
 		"""
-		Получить имя источника
+		Получить имя источника в utf-8
 
 		:param source:  источник
 		:return:  имя источника
@@ -124,6 +124,7 @@ class FileSource(Source):
 
 	def getSourceSize(self, source):
 		return os.path.getsize(os.path.abspath(source.name)) / 1024
+
 
 class FileBlockSource(FileSource):
 	""" Источник для работы по блокам с текстовыми файлами """

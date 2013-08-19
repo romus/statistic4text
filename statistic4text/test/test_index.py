@@ -44,8 +44,9 @@ class TestMongoIndex(unittest.TestCase):
 		self.__mongoIndex.makeTotalIndex()
 
 	def testMakeDocIndex(self):
-		data = "Проверка сохранения индекса. Check save index"
+		data = "Проверка проверка сохранения индекса. Check save index"
 		self.__mongoIndex.makeDocIndex("test_source_name", 1234, data, self.__simpleNormal)
+		self.__mongoIndex.makeTotalIndex()
 
 if __name__ == "__main__":
 	unittest.main()

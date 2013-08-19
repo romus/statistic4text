@@ -78,11 +78,12 @@ class MongoIndex(Index):
 		if not isinstance(normalizationCallback, Normalization):
 			raise ParamError("normalizationCallback is not instance Normalization")
 
+		sn = self.__detectEncoding.encodeText(sourceName)
 		sen = self.__detectEncoding.getEncode(sourceName)
 		sde = normalizationCallback.getNormalizeTextEncode()
 		sdc = datetime.datetime.now()
 		normalizeData = normalizationCallback.normalizeText(data)  # нормализация полученного текста
-		self.__makeDocIndex(normalizeData, True, sourceName, sen, ss, sde, sdc)  # сохранение
+		self.__makeDocIndex(normalizeData, True, sn, sen, ss, sde, sdc)  # сохранение
 		self.__saveDict(True)  # сохранение словаря, если он что-то содержит
 
 	def makeDocIndexCustom(self, openSourceCallback, sourceCustom, normalizationCallback):
@@ -104,7 +105,7 @@ class MongoIndex(Index):
 			try:
 				normalizeData = normalizationCallback.normalizeText(itemData)  # нормализация полученного текста
 				if isSave:  # добавление нового словарного индекса
-					sn = openSourceCallback.getName(openSource)  # имя
+					sn = self.__detectEncoding.encodeText(openSourceCallback.getName(openSource))  # имя
 					sen = self.__detectEncoding.getEncode(sn)
 					ss = openSourceCallback.getSourceSize(openSource)  # размер в kB
 					sde = normalizationCallback.getNormalizeTextEncode()
