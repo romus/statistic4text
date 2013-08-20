@@ -32,5 +32,5 @@ class TestCalcMongo(unittest.TestCase):
 		self.assertRaises(ParamError, self.__calcMongo.calcTF_IDF, 10)
 
 
-if __name__ == "__main__":
-	unittest.main()
+# if __name__ == "__main__":
+# 	unittest.main()

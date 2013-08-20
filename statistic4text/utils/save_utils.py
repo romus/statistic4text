@@ -208,8 +208,8 @@ class MongoSaveUtils(SaveUtils):
 				# получить idf по слову
 				dataIDF = self.__dataFilesCollection.find_one({"dict_id": self.__mergeDictID, "word": itemData["word"]},
 															  fields=["idf"])
-				updateFT_IDF = calc.calcTF_IDF(itemData["tf"], dataIDF["idf"])
-				self.__dataFilesCollection.update({"_id": itemData["_id"]}, {"$set": {"tf_idf": updateFT_IDF}})
+				updateTF_IDF = calc.calcTF_IDF(itemData["tf"], dataIDF["idf"])
+				self.__dataFilesCollection.update({"_id": itemData["_id"]}, {"$set": {"tf_idf": updateTF_IDF}})
 
 	def __checkExistMergeDict(self):
 		""" Проверка на существование итогового словаря. Если словаря нет, то выбрасывается исключение. """

@@ -70,6 +70,3 @@ class TestMongoSaveUtils(unittest.TestCase):
 		self.mongoUtils.deleteMergeDict()
 		self.assertRaises(Exception, self.mongoUtils.addMoreStatistics, self.calcMongo)
 
-
-if __name__ == "__main__":
-	unittest.main()
