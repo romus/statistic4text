@@ -5,6 +5,8 @@ __author__ = 'romus'
 import datetime
 from abc import ABCMeta, abstractmethod
 import pymongo
+from statistic4text.calc.calc import CalcMongo
+from statistic4text.errors.errors import ParamError
 
 
 class SaveUtils():
@@ -61,6 +63,15 @@ class SaveUtils():
 	def getMergeDictID(self):
 		""" Получить id итогового словаря """
 		return -1
+
+	@abstractmethod
+	def addMoreStatistics(self, calc):
+		"""
+		Добавление дополнительной статистики по сохраненным словарям
+
+		:param calc:  объект для расчета дополнительных характеристик
+		"""
+		pass
 
 
 class MongoSaveUtils(SaveUtils):
@@ -172,7 +183,33 @@ class MongoSaveUtils(SaveUtils):
 		self.__filesCollection.remove({"merge_dict_id": self.__mergeDictID})
 
 	def getMergeDictID(self):
-		return  self.__mergeDictID
+		return self.__mergeDictID
+
+	def addMoreStatistics(self, calc):
+		if not calc:
+			raise ParamError("calc not to be a None")
+		if not isinstance(calc, CalcMongo):
+			raise ParamError("calc is not instance CalcMongo")
+		self.__checkExistMergeDict()
+
+		# расчет обратной документальной частоты
+		dicts = self.__filesCollection.find({"merge_dict_id": self.__mergeDictID}, fields=["_id"])
+		countDicts = dicts.count()  # количество файлов
+		docsDataMergeDict = self.__dataFilesCollection.find({"dict_id": self.__mergeDictID}, fields=["_id", "cf"])
+		for itemDataMergeDict in docsDataMergeDict:
+			updateIDF = calc.calcIDF(itemDataMergeDict["cf"], countDicts)
+			self.__dataFilesCollection.update({"_id": itemDataMergeDict["_id"]}, {"$set": {"idf": updateIDF}})
+
+		# расчет комбинированного значения частоты и обратной документальной частоты термина
+		for itemDict in dicts:
+			# получить все данные по словарю
+			dataDict = self.__dataFilesCollection.find({"dict_id": itemDict["_id"]}, fields=["_id", "tf", "word"])
+			for itemData in dataDict:
+				# получить idf по слову
+				dataIDF = self.__dataFilesCollection.find_one({"dict_id": self.__mergeDictID, "word": itemData["word"]},
+															  fields=["idf"])
+				updateFT_IDF = calc.calcTF_IDF(itemData["tf"], dataIDF["idf"])
+				self.__dataFilesCollection.update({"_id": itemData["_id"]}, {"$set": {"tf_idf": updateFT_IDF}})
 
 	def __checkExistMergeDict(self):
 		""" Проверка на существование итогового словаря. Если словаря нет, то выбрасывается исключение. """

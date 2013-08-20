@@ -5,6 +5,7 @@ __author__ = 'romus'
 
 
 import unittest
+from statistic4text.calc.calc import CalcMongo
 from statistic4text.index.index import MongoIndex
 from statistic4text.utils.save_utils import MongoSaveUtils
 from statistic4text.utils.normalization_utils import SimpleNormalization
@@ -26,6 +27,7 @@ class TestMongoIndex(unittest.TestCase):
 		self.__simpleNormal = SimpleNormalization()
 		self.__fileSourceCustom = FileSourceCustom()
 		self.__fileBlockSource = FileBlockSource()
+		self.__calcMongo = CalcMongo()
 		self.__mongoIndex = MongoIndex(self.__mongoUtils)
 
 	def testMakeDocIndexCustomUtf8(self):
@@ -47,6 +49,12 @@ class TestMongoIndex(unittest.TestCase):
 		data = "Проверка проверка сохранения индекса. Check save index"
 		self.__mongoIndex.makeDocIndex("test_source_name", 1234, data, self.__simpleNormal)
 		self.__mongoIndex.makeTotalIndex()
+
+	def testAddMoreStatistics(self):
+		self.__fileSourceCustom.custom = "resources/test_mongo_index_utf8"
+		self.__mongoIndex.makeDocIndexCustom(self.__fileBlockSource, self.__fileSourceCustom, self.__simpleNormal)
+		self.__mongoIndex.makeTotalIndex()
+		self.__mongoUtils.addMoreStatistics(self.__calcMongo)
 
 if __name__ == "__main__":
 	unittest.main()

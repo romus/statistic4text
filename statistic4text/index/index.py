@@ -29,6 +29,7 @@ class Index():
 		:param ss:  source size - размер данных источника в kB
 		:param data:  данные из файла (список строк в любой кодировке)
 		:param normalizationCallback:  колбэк для нормализации файла (если None, то разделение слов по пробелу)
+		:rtype: NoneType
 		"""
 		pass
 
@@ -40,22 +41,40 @@ class Index():
 		:param openSourceCallback:  колбэк для получения данных из файла
 		:param sourceCustom:  настройки для работы источника
 		:param normalizationCallback:  колбэк для нормализации файла (если None, то разделение слов по пробелу)
+		:rtype: NoneType
 		"""
 		pass
 
 	@abstractmethod
 	def makeTotalIndex(self):
-		""" Формирование общего индекса по всем файлам """
+		"""
+		Формирование общего индекса по всем файлам
+
+		:rtype: NoneType
+		"""
 		pass
 
 	@abstractproperty
 	def getBufferSize(self):
-		""" Получить размер буффера для хранения данных в оперативной памяти [kB]"""
-		pass
+		"""
+		Получить размер буффера для хранения данных в оперативной памяти [kB]
+
+		:return:  размер буффера в kB
+		"""
+		return None
 
 	@abstractproperty
 	def setBufferSize(self, bufferSize):
 		""" Установить размер буффера для хранения данных в оперативной памяти [kB]"""
+		pass
+
+	@abstractmethod
+	def addMoreStatistics(self, calc):
+		"""
+		Добавление дополнительной статистики по сохраненным словарям
+
+		:param calc:  объект для расчета дополнительных характеристик
+		"""
 		pass
 
 	bufferSize = abstractproperty(getBufferSize, setBufferSize)
@@ -123,6 +142,9 @@ class MongoIndex(Index):
 	def makeTotalIndex(self):
 		self.__mongoUtils.mergeDicts()
 
+	def addMoreStatistics(self, calc):
+		self.__mongoUtils.addMoreStatistics(calc)
+
 	def getBufferSize(self):
 		return self.__bufferSize
 
@@ -178,6 +200,8 @@ class IndexFactory():
 		Создание индексатора
 
 		:param indexType:  тип создаваемоего объекта
+		:rtype:  Index
+		:return:  объект для создания индекса
 		"""
 		if not indexType:
 			raise ParamError("indexType is not None or ''")
