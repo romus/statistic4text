@@ -24,6 +24,7 @@ class Calc():
 		"""
 		return None
 
+	@abstractmethod
 	def calcTF_IDF(self, *args):
 		"""
 		Вычислить комбинированное значение частоты и обратной документальной частоты термина
