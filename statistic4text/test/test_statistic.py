@@ -7,8 +7,9 @@ __author__ = 'romus'
 import os
 import unittest
 from statistic4text.calc.calc import CalcMongo
-from statistic4text.statistic.statistic import MongoStatistic
+from statistic4text.errors.errors import DataNotFound
 from statistic4text.utils.save_utils import MongoSaveUtils
+from statistic4text.statistic.statistic import MongoStatistic
 from statistic4text.utils.normalization_utils import SimpleNormalization
 from statistic4text.utils.source_data_utils import FileBlockSource, FileSourceCustom
 
@@ -31,6 +32,12 @@ class TestMongoStatistic(unittest.TestCase):
 		self.__calcMongo = CalcMongo()
 		self.__mongoIndex = MongoStatistic(self.__mongoUtils)
 		self.__dirPath = os.path.abspath(os.curdir)
+
+	def tearDown(self):
+		try:
+			self.__mongoUtils.deleteMergeDict()
+		except DataNotFound:
+			pass
 
 	def testMakeDocStatisticCustomUtf8(self):
 		filePath = os.path.join(self.__dirPath, "resources/test_mongo_index_utf8")

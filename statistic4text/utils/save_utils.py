@@ -6,7 +6,7 @@ import datetime
 from abc import ABCMeta, abstractmethod
 import pymongo
 from statistic4text.calc.calc import CalcMongo
-from statistic4text.errors.errors import ParamError
+from statistic4text.errors.errors import ParamError, DataNotFound
 
 
 class SaveUtils():
@@ -215,4 +215,4 @@ class MongoSaveUtils(SaveUtils):
 		""" Проверка на существование итогового словаря. Если словаря нет, то выбрасывается исключение. """
 
 		if not self.__mergeDictID:  # если нет документа итогового словаря
-			raise Exception("All created data was removed (was invoked deleteMergeDict() method)")
+			raise DataNotFound("All created data was removed (was invoked deleteMergeDict() method)")

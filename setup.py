@@ -1,8 +1,10 @@
 __author__ = 'romus'
 
+
 from setuptools import setup, find_packages
 from os.path import join, dirname
 import statistic4text
+
 
 setup(
 	name="statistic4text",
