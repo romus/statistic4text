@@ -32,8 +32,10 @@ class TestMongoSaveUtils(unittest.TestCase):
 	def testConnection(self):
 		self.assertIsNotNone(self.mongoUtils, "connection is fail")
 
+	def testGetMergeDictID(self):
+		self.assertIsNotNone(self.mongoUtils.getMergeDictID(), "fail to get merge dict ID")
+
 	def testSaveAddDict(self):
-		self.testConnection()
 		insertID = self.mongoUtils.saveDict("test_dict", "utf-8", 1234, {"the": 1, "test": 2},
 											"utf-8", datetime.datetime.now())
 		self.assertIsNotNone(insertID)
@@ -41,7 +43,6 @@ class TestMongoSaveUtils(unittest.TestCase):
 		self.mongoUtils.deleteMergeDict()
 
 	def testMergeDicts(self):
-		self.testConnection()
 		self.assertIsNotNone(self.mongoUtils, "connection is ok")
 		insertID = self.mongoUtils.saveDict("test_dict1", "utf-8", 1234, {"the": 1, "test": 2},
 											"utf-8", datetime.datetime.now())

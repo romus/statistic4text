@@ -15,15 +15,15 @@ from statistic4text.utils.normalization_utils import Normalization, DetectEncodi
 MONGO_TYPE = "mongo"
 
 
-class Index():
+class Statistic():
 	""" Формирование статистики по файлам """
 
 	__metaclass__ = ABCMeta
 
 	@abstractmethod
-	def makeDocIndex(self, sourceName, ss, data, normalizationCallback):
+	def makeDocStatistic(self, sourceName, ss, data, normalizationCallback):
 		"""
-		Формирование индекса по файлу
+		Формирование статистики по файлу
 
 		:param sourceName:  полное имя источника (в любой кодировке)
 		:param ss:  source size - размер данных источника в kB
@@ -34,9 +34,9 @@ class Index():
 		pass
 
 	@abstractmethod
-	def makeDocIndexCustom(self, openSourceCallback, sourceCustom, normalizationCallback):
+	def makeDocStatisticCustom(self, openSourceCallback, sourceCustom, normalizationCallback):
 		"""
-		Формирование индекса по файлу
+		Формирование статистики по файлу
 
 		:param openSourceCallback:  колбэк для получения данных из файла
 		:param sourceCustom:  настройки для работы источника
@@ -46,9 +46,9 @@ class Index():
 		pass
 
 	@abstractmethod
-	def makeTotalIndex(self):
+	def makeTotalStatistic(self):
 		"""
-		Формирование общего индекса по всем файлам
+		Формирование статистики по всем источникам
 
 		:rtype: NoneType
 		"""
@@ -79,8 +79,17 @@ class Index():
 
 	bufferSize = abstractproperty(getBufferSize, setBufferSize)
 
+	@abstractmethod
+	def getMainStatisticID(self):
+		"""
+		Получить id сохраненного источника со статистикой
 
-class MongoIndex(Index):
+		:return:  id сохраненного источника со статистикой
+		"""
+		return None
+
+
+class MongoStatistic(Statistic):
 	""" Формирование и сохранение индекса в mongodb """
 
 	def __init__(self, mongoUtils):
@@ -90,7 +99,7 @@ class MongoIndex(Index):
 		self.__bufferDict = {}
 		self.__detectEncoding = DetectEncoding()
 
-	def makeDocIndex(self, sourceName, ss, data, normalizationCallback):
+	def makeDocStatistic(self, sourceName, ss, data, normalizationCallback):
 		if not normalizationCallback:
 			raise ParamError("normalizationCallback not to be a None")
 
@@ -105,7 +114,7 @@ class MongoIndex(Index):
 		self.__makeDocIndex(normalizeData, True, sn, sen, ss, sde, sdc)  # сохранение
 		self.__saveDict(True)  # сохранение словаря, если он что-то содержит
 
-	def makeDocIndexCustom(self, openSourceCallback, sourceCustom, normalizationCallback):
+	def makeDocStatisticCustom(self, openSourceCallback, sourceCustom, normalizationCallback):
 		if not openSourceCallback or not normalizationCallback or not sourceCustom:
 			raise ParamError("openSourceCallback or normalizationCallback or sourceCustom  not to be a None")
 
@@ -139,7 +148,7 @@ class MongoIndex(Index):
 
 		openSourceCallback.closeSource(openSource)
 
-	def makeTotalIndex(self):
+	def makeTotalStatistic(self):
 		self.__mongoUtils.mergeDicts()
 
 	def addMoreStatistics(self, calc):
@@ -150,6 +159,9 @@ class MongoIndex(Index):
 
 	def setBufferSize(self, bufferSize):
 		self.__bufferSize = bufferSize
+
+	def getMainStatisticID(self):
+		self.__mongoUtils.getMergeDictID()
 
 	def __makeDocIndex(self, data, createNewDocIndex=False, sn=None, sen=None, ss=0, sde=None, sdc=None):
 		"""
@@ -193,14 +205,14 @@ class MongoIndex(Index):
 	bufferSize = property(getBufferSize, setBufferSize)
 
 
-class IndexFactory():
+class StatisticFactory():
 
 	def createIndex(self, indexType, saveUtil):
 		"""
 		Создание индексатора
 
 		:param indexType:  тип создаваемоего объекта
-		:rtype:  Index
+		:rtype:  Statistic
 		:return:  объект для создания индекса
 		"""
 		if not indexType:
@@ -210,6 +222,6 @@ class IndexFactory():
 		if indexType == MONGO_TYPE:
 			if not isinstance(saveUtil, MongoSaveUtils):
 				raise ParamError("saveUtil is not instance MongoSaveUtils")
-			retObject = MongoIndex(saveUtil)
+			retObject = MongoStatistic(saveUtil)
 
 		return retObject
