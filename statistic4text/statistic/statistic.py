@@ -207,19 +207,19 @@ class MongoStatistic(Statistic):
 
 class StatisticFactory():
 
-	def createIndex(self, indexType, saveUtil):
+	def createStatistic(self, statisticType, saveUtil):
 		"""
 		Создание индексатора
 
-		:param indexType:  тип создаваемоего объекта
+		:param statisticType:  тип создаваемоего объекта
 		:rtype:  Statistic
 		:return:  объект для создания индекса
 		"""
-		if not indexType:
-			raise ParamError("indexType is not None or ''")
+		if not statisticType:
+			raise ParamError("statisticType is not None or ''")
 
 		retObject = None
-		if indexType == MONGO_TYPE:
+		if statisticType == MONGO_TYPE:
 			if not isinstance(saveUtil, MongoSaveUtils):
 				raise ParamError("saveUtil is not instance MongoSaveUtils")
 			retObject = MongoStatistic(saveUtil)
