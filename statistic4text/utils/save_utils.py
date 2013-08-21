@@ -135,9 +135,9 @@ class MongoSaveUtils(SaveUtils):
 			return
 
 		for key, value in data.iteritems():
-			word = self.__dataFilesCollection.find_one({"dict_id": dictID, "word": key})
+			word = self.__dataFilesCollection.find_one({"dict_id": dictID, "word": key}, fields=["_id"])
 			if word:  # обновляем частоту терминов в документе (term frequency - tf)
-				self.__dataFilesCollection.update({"_id": word['_id']}, {"$set": {"tf": word['tf'] + value}})
+				self.__dataFilesCollection.update({"_id": word['_id']}, {"$inc": {"tf": value}})
 			else:  # вставляем новую запись
 				self.__dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID})
 
@@ -151,15 +151,14 @@ class MongoSaveUtils(SaveUtils):
 			words = self.__dataFilesCollection.find({"dict_id": itemFile["_id"]}, fields=["word", "tf"])
 			for itemWord in words:
 				# найти слово в итоговом словаре
-				mergeWord = self.__dataFilesCollection.find_one(
-					{"dict_id": self.__mergeDictID, "word": itemWord['word']})
+				findData = {"dict_id": self.__mergeDictID, "word": itemWord['word']}
+				mergeWord = self.__dataFilesCollection.find_one(findData, fields=["_id"])
 				if mergeWord:  # обновление существующей записи
-					self.__dataFilesCollection.update({"_id": mergeWord['_id']},
-													  {"$set": {"cf": mergeWord['cf'] + itemWord['tf'],
-																"df": mergeWord['df'] + 1}})
+					updateData = {"$inc": {"cf": itemWord['tf'], "df": 1}}
+					self.__dataFilesCollection.update({"_id": mergeWord['_id']}, updateData)
 				else:  # добавление новой записи
-					self.__dataFilesCollection.insert({"dict_id": self.__mergeDictID, "word": itemWord['word'],
-													   "cf": itemWord['tf'], "df": 1})
+					inData = {"dict_id": self.__mergeDictID, "word": itemWord['word'], "cf": itemWord['tf'], "df": 1}
+					self.__dataFilesCollection.insert(inData)
 
 		return self.__mergeDictID
 

@@ -30,7 +30,3 @@ class TestCalcMongo(unittest.TestCase):
 	def testCalcTF_IDFException(self):
 		self.assertRaises(ParamError, self.__calcMongo.calcTF_IDF)
 		self.assertRaises(ParamError, self.__calcMongo.calcTF_IDF, 10)
-
-
-# if __name__ == "__main__":
-# 	unittest.main()
