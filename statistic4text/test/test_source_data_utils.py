@@ -31,6 +31,30 @@ class TestFileSource(unittest.TestCase):
 			self.assertIsNotNone(line)
 		self.__fileSource.closeSource(source)
 
+	def testGetName(self):
+		filePath = os.path.join(self.__dirPath, "resources/test_read_file")
+		source = self.__fileSource.openSource(filePath)
+		self.assertIsNotNone(self.__fileSource.getName(source))
+		self.__fileSource.closeSource(source)
+
+	def testGetSourceSize(self):
+		filePath = os.path.join(self.__dirPath, "resources/test_read_file")
+		source = self.__fileSource.openSource(filePath)
+		self.assertIsNotNone(self.__fileSource.getSourceSize(source))
+		self.__fileSource.closeSource(source)
+
+	def testGetSourceDateCreated(self):
+		filePath = os.path.join(self.__dirPath, "resources/test_read_file")
+		source = self.__fileSource.openSource(filePath)
+		self.assertIsNotNone(self.__fileSource.getSourceDateCreated(source))
+		self.__fileSource.closeSource(source)
+
+	def testGetSourceDateModified(self):
+		filePath = os.path.join(self.__dirPath, "resources/test_read_file")
+		source = self.__fileSource.openSource(filePath)
+		self.assertIsNotNone(self.__fileSource.getSourceDateModified(source))
+		self.__fileSource.closeSource(source)
+
 
 class TestFileBlockSource(unittest.TestCase):
 	def setUp(self):

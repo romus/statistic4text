@@ -61,6 +61,26 @@ class Source():
 		"""
 		return None
 
+	@abstractmethod
+	def getSourceDateCreated(self, source):
+		"""
+		Получить дату создания источника
+
+		:param source:  источник
+		:return:  дата создания
+		"""
+		return None
+
+	@abstractmethod
+	def getSourceDateModified(self, source):
+		"""
+		Получить дату последнего изменения источника
+
+		:param source:  источник
+		:return:  дата последнего изменения
+		"""
+		return None
+
 
 class SourceCustom():
 	""" Настройки для работы источника """
@@ -120,10 +140,40 @@ class FileSource(Source):
 			yield line
 
 	def getName(self, source):
+		"""
+		Получить имя файла
+
+		:param source:  открытый файл
+		:return:  полное имя файла
+		"""
 		return os.path.abspath(source.name)
 
 	def getSourceSize(self, source):
+		"""
+		Получить размер файла
+
+		:param source:  открытый файл
+		:return:  размер файла в kB
+		"""
 		return os.path.getsize(os.path.abspath(source.name)) / 1024
+
+	def getSourceDateCreated(self, source):
+		"""
+		Получить дату создания файла
+
+		:param source:  открытый файл
+		:return:  дата создания файла
+		"""
+		return os.path.getctime(os.path.abspath(source.name))
+
+	def getSourceDateModified(self, source):
+		"""
+		Получить дату последней модификации файла
+
+		:param source:  открытый файл
+		:return:  дата последней модификации файла
+		"""
+		return os.path.getmtime(os.path.abspath(source.name))
 
 
 class FileBlockSource(FileSource):
@@ -221,6 +271,7 @@ class FileBlockSource(FileSource):
 
 
 class FileSourceCustom(SourceCustom):
+	""" Настройки для открытия файла в ФС """
 
 	def __init__(self):
 		self.__custom = None
