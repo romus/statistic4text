@@ -88,34 +88,34 @@ class SimpleNormalization(Normalization):
 	""" Класс реализующий простую нормализацию текста """
 
 	def __init__(self):
-		self.__detectEncoding = DetectEncoding()
-		self.__defaultEncodeText = "utf-8"
-		self.setNormalizeTextEncode(self.__defaultEncodeText)
-		self.__diacritics = re.compile(u'[\u0300-\u036f\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]', re.U)
-		self.__detection = Detection()
-		self.__porterStemming = PorterStemming()
+		self._detectEncoding = DetectEncoding()
+		self._defaultEncodeText = "utf-8"
+		self.setNormalizeTextEncode(self._defaultEncodeText)
+		self._diacritics = re.compile(u'[\u0300-\u036f\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]', re.U)
+		self._detection = Detection()
+		self._porterStemming = PorterStemming()
 
 	def normalizeText(self, text):
 		if not text:
 			raise ParamError("Text is not to be None or ''")
 
-		dt = self.__detectEncoding.encodeText(text, self.__defaultEncodeText)  # dt = decode text
-		ndt = self.__diacritics.sub('', unicodedata.normalize('NFD', unicode(dt, self.__defaultEncodeText)))
+		dt = self._detectEncoding.encodeText(text, self._defaultEncodeText)  # dt = decode text
+		ndt = self._diacritics.sub('', unicodedata.normalize('NFD', unicode(dt, self._defaultEncodeText)))
 		ndt = ndt.lower().replace("\n", " ").strip()
 
 		n_w = []  # normalize words
 		if ndt:
 			temp_normalize_words = re.split('\s+', ndt)
 			for word in temp_normalize_words:
-				unicode_word = self.__normalizeWord(word)
+				unicode_word = self._normalizeWord(word)
 
-				lang = self.__detection.detect(unicode_word)
+				lang = self._detection.detect(unicode_word)
 				normalize_word = unicode_word
 
 				if lang == 1:
-					normalize_word = self.__porterStemming.stem(unicode_word)
+					normalize_word = self._porterStemming.stem(unicode_word)
 				elif lang == 2:
-					normalize_word = self.__porterStemming.stemRu(unicode_word)
+					normalize_word = self._porterStemming.stemRu(unicode_word)
 
 				# чтобы не добавлять пустые строки. Пример ""
 				if normalize_word:
@@ -126,7 +126,7 @@ class SimpleNormalization(Normalization):
 			except Exception as e:
 				print("Error parse {0}".format(str(e)))
 
-		return [self.__detectEncoding.encodeText(item.encode(self.__defaultEncodeText), self.getNormalizeTextEncode()) for item in n_w]
+		return [self._detectEncoding.encodeText(item.encode(self._defaultEncodeText), self.getNormalizeTextEncode()) for item in n_w]
 
 	def normalizeTextWithoutRepetition(self, text):
 		return list(set(self.normalizeText(text)))
@@ -137,7 +137,7 @@ class SimpleNormalization(Normalization):
 
 		:param normalizeTextEncode:  название кодировки (по-умолчанию utf-8)
 		"""
-		self.__normalizeTextEncode = normalizeTextEncode
+		self._normalizeTextEncode = normalizeTextEncode
 
 	def getNormalizeTextEncode(self):
 		"""
@@ -145,9 +145,9 @@ class SimpleNormalization(Normalization):
 
 		:return:  название кодировки (по умолчанию utf-8)
 		"""
-		return self.__normalizeTextEncode
+		return self._normalizeTextEncode
 
-	def __normalizeWord(self, word):
+	def _normalizeWord(self, word):
 		"""
 		Убрать из начала и конца слова все символы не из алфавита
 
@@ -173,12 +173,12 @@ class SimpleNormalization(Normalization):
 		# ищем позицию первого индекса
 		for x in range(0, wordLen):
 			f_index = x
-			if self.__detection.check_symbol(unicodeWord[x]):
+			if self._detection.check_symbol(unicodeWord[x]):
 				break
 
 		for x in range(s_index, f_index, -1):
 			s_index = x
-			if self.__detection.check_symbol(unicodeWord[x]):
+			if self._detection.check_symbol(unicodeWord[x]):
 				break
 
 		if f_index + 1 >= s_index:
