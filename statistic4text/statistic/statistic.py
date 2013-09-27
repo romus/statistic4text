@@ -161,7 +161,7 @@ class MongoStatistic(Statistic):
 		self.__bufferSize = bufferSize
 
 	def getMainStatisticID(self):
-		self.__mongoUtils.getMergeDictID()
+		return self.__mongoUtils.getMergeDictID()
 
 	def __makeDocIndex(self, data, createNewDocIndex=False, sn=None, sen=None, ss=0, sde=None, sdc=None):
 		"""

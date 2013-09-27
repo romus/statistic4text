@@ -6,7 +6,7 @@ __author__ = 'romus'
 
 import unittest
 from statistic4text.calc.calc import CalcMongo
-from  statistic4text.errors.errors import ParamError
+from statistic4text.errors.errors import ParamError
 
 
 class TestCalcMongo(unittest.TestCase):
