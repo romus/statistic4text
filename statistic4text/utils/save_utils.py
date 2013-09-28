@@ -116,7 +116,7 @@ class MongoSaveUtils(SaveUtils):
 			self._dataFilesCollection.create_index(self.INDEX_FIELDS_DATA_FILES_COLLECTION)
 
 	def saveDict(self, dictName, dictNameEncode, dictSize, data, dataEncode, dateIndex):
-		self.__checkExistMergeDict()
+		self._checkExistMergeDict()
 
 		dictID = self._filesCollection.insert({"dict_name": dictName, "dict_name_encode": dictNameEncode,
 												"dict_size": dictSize, "data_encode": dataEncode,
@@ -128,7 +128,7 @@ class MongoSaveUtils(SaveUtils):
 		return dictID
 
 	def add2Dict(self, dictID, data):
-		self.__checkExistMergeDict()
+		self._checkExistMergeDict()
 
 		checkFile = self._filesCollection.find_one({"_id": dictID})
 		if not checkFile:  # если файла в коллекции файлов нет
@@ -142,7 +142,7 @@ class MongoSaveUtils(SaveUtils):
 				self._dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID})
 
 	def mergeDicts(self):
-		self.__checkExistMergeDict()
+		self._checkExistMergeDict()
 
 		# найдем все файлы, по которым раннее строился индекс
 		files = self._filesCollection.find({"dict_type": 1, "merge_dict_id": self._mergeDictID}, fields=["_id"])
@@ -163,7 +163,7 @@ class MongoSaveUtils(SaveUtils):
 		return self._mergeDictID
 
 	def deleteMergeDict(self):
-		self.__checkExistMergeDict()
+		self._checkExistMergeDict()
 
 		self.deleteDicts()
 		self._filesCollection.remove({"_id": self._mergeDictID})
@@ -171,7 +171,7 @@ class MongoSaveUtils(SaveUtils):
 		self._mergeDictID = None
 
 	def deleteDicts(self):
-		self.__checkExistMergeDict()
+		self._checkExistMergeDict()
 
 		files = self._filesCollection.find({"merge_dict_id": self._mergeDictID}, fields=["_id"])
 		if files:
@@ -189,7 +189,7 @@ class MongoSaveUtils(SaveUtils):
 			raise ParamError("calc not to be a None")
 		if not isinstance(calc, CalcMongo):
 			raise ParamError("calc is not instance CalcMongo")
-		self.__checkExistMergeDict()
+		self._checkExistMergeDict()
 
 		# расчет обратной документальной частоты
 		dicts = self._filesCollection.find({"merge_dict_id": self._mergeDictID}, fields=["_id"])
@@ -210,7 +210,7 @@ class MongoSaveUtils(SaveUtils):
 				updateTF_IDF = calc.calcTF_IDF(itemData["tf"], dataIDF["idf"])
 				self._dataFilesCollection.update({"_id": itemData["_id"]}, {"$set": {"tf_idf": updateTF_IDF}})
 
-	def __checkExistMergeDict(self):
+	def _checkExistMergeDict(self):
 		""" Проверка на существование итогового словаря. Если словаря нет, то выбрасывается исключение. """
 
 		if not self._mergeDictID:  # если нет документа итогового словаря
