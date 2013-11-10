@@ -43,7 +43,7 @@ class ReadUtils():
 		:rtype:  dict
 		:return:  словарь с данными из словаря/файла/источника
 		"""
-		return  None
+		return None
 
 
 class MongoReadUtils(ReadUtils):
@@ -60,22 +60,22 @@ class MongoReadUtils(ReadUtils):
 		:param filesCollectionName:  имя коллекции для описания свойств сохраняемых словарей (файлов)
 		:param dataFilesCollectionName:  имя коллекции для хранения данных словарей (файлов)
 		"""
-		self.__client = pymongo.MongoClient(host=host, port=port)
-		self.__db = self.__client[databaseName]
-		self.__db.authenticate(user, password)
-		self.__filesCollection = self.__db[filesCollectionName]
-		self.__dataFilesCollection = self.__db[dataFilesCollectionName]
+		self._client = pymongo.MongoClient(host=host, port=port)
+		self._db = self._client[databaseName]
+		self._db.authenticate(user, password)
+		self._filesCollection = self._db[filesCollectionName]
+		self._dataFilesCollection = self._db[dataFilesCollectionName]
 
 	def getDict(self, dictID):
-		return self.__filesCollection.find_one({"_id": dictID})
+		return self._filesCollection.find_one({"_id": dictID})
 
 	def getSubDicts(self, mergeDictID):
-		return self.__getLazyData(self.__filesCollection, {"merge_dict_id": mergeDictID})
+		return self._getLazyData(self._filesCollection, {"merge_dict_id": mergeDictID})
 
 	def getDictData(self, dictID):
-		return self.__getLazyData(self.__dataFilesCollection, {"dict_id": dictID})
+		return self._getLazyData(self._dataFilesCollection, {"dict_id": dictID})
 
-	def __getLazyData(self, collection, findProps):
+	def _getLazyData(self, collection, findProps):
 		"""
 		Получение данных из коллекции
 
