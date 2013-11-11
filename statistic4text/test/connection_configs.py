@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-__author__ = 'r'
+__author__ = 'romus'
 
 
 HOST = "192.168.0.80"
