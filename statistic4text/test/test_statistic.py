@@ -6,7 +6,9 @@ __author__ = 'romus'
 
 import os
 import unittest
+
 from statistic4text.calc.calc import CalcMongo
+from statistic4text.test.connection_configs import *
 from statistic4text.errors.errors import DataNotFound
 from statistic4text.utils.save_utils import MongoSaveUtils
 from statistic4text.statistic.statistic import MongoStatistic
@@ -17,15 +19,7 @@ from statistic4text.utils.source_data_utils import FileBlockSource, FileSourceCu
 class TestMongoStatistic(unittest.TestCase):
 
 	def setUp(self):
-		h = "192.168.0.80"
-		p = 27017
-		usr = "statistic"
-		pwd = "statistic"
-		db = "statistic"
-		fc_n = "files"
-		fc_dn = "files_data"
-		mdn = "test_merge_dict"
-		self.__mongoUtils = MongoSaveUtils(h, p, usr, pwd, db, fc_n, fc_dn, mdn)
+		self.__mongoUtils = MongoSaveUtils(HOST, PORT, USR, PWD, DB, FC_N, FC_DN, MDN)
 		self.__simpleNormal = SimpleNormalization()
 		self.__fileSourceCustom = FileSourceCustom()
 		self.__fileBlockSource = FileBlockSource()

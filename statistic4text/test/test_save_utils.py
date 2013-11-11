@@ -6,7 +6,9 @@ __author__ = 'romus'
 import unittest
 import datetime
 from pymongo.errors import ConnectionFailure
+
 from statistic4text.calc.calc import CalcMongo
+from statistic4text.test.connection_configs import *
 from statistic4text.utils.save_utils import MongoSaveUtils
 from statistic4text.errors.errors import ParamError, DataNotFound
 
@@ -14,17 +16,8 @@ from statistic4text.errors.errors import ParamError, DataNotFound
 class TestMongoSaveUtils(unittest.TestCase):
 
 	def setUp(self):
-		self.__mongoUtils = None
-		h = "192.168.0.80"
-		p = 27017
-		usr = "statistic"
-		pwd = "statistic"
-		db = "statistic"
-		fc_n = "files"
-		fc_dn = "files_data"
-		mdn = "test_merge_dict"
 		try:
-			self.__mongoUtils = MongoSaveUtils(h, p, usr, pwd, db, fc_n, fc_dn, mdn)
+			self.__mongoUtils = MongoSaveUtils(HOST, PORT, USR, PWD, DB, FC_N, FC_DN, MDN)
 			self.calcMongo = CalcMongo()
 		except ConnectionFailure as e:
 			pass
