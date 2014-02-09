@@ -6,6 +6,7 @@ __author__ = 'romus'
 import sys
 import datetime
 from abc import ABCMeta, abstractmethod, abstractproperty
+
 from statistic4text.errors.errors import ParamError
 from statistic4text.utils.save_utils import MongoSaveUtils
 from statistic4text.utils.source_data_utils import Source, SourceCustom
@@ -138,10 +139,10 @@ class MongoStatistic(Statistic):
 					ss = openSourceCallback.getSourceSize(openSource)  # размер в kB
 					sde = normalizationCallback.getNormalizeTextEncode()
 					sdc = datetime.datetime.now()
-					self.__makeDocIndex(normalizeData, isSave, sn, sen, ss, sde, sdc)  # сохранение
+					self.__makeDocIndex(normalizeData, True, sn, sen, ss, sde, sdc)  # сохранение
 					isSave = False
 				else:  # добавление данных к уже существующему индексу
-					self.__makeDocIndex(normalizeData, isSave)
+					self.__makeDocIndex(normalizeData, False)
 			except ParamError:
 				pass
 		self.__saveDict(True)  # сохранение словаря, если он что-то содержит

@@ -6,6 +6,12 @@ __author__ = 'romus'
 import os
 from abc import ABCMeta, abstractmethod, abstractproperty
 
+from statistic4text.errors.errors import ParamError
+
+
+FILE_SOURCE_TYPE = "file_source_type"
+FILE_BLOCK_SOURCE_TYPE = "file_block_source_type"
+
 
 class Source():
 	""" Абстрактный класс для работы с источниками данных """
@@ -283,3 +289,19 @@ class FileSourceCustom(SourceCustom):
 		self.__custom = custom
 
 	custom = property(getCustom, setCustom)
+
+
+class SourceFactory():
+
+	def createSource(self, source_type):
+		"""
+
+		:param source_type:  тип источника с данными
+		"""
+		ret_object = None
+		if source_type == FILE_SOURCE_TYPE:
+			ret_object = FileSource()
+		elif source_type == FILE_BLOCK_SOURCE_TYPE:
+			ret_object = FileBlockSource()
+
+		return ret_object
