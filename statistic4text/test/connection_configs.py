@@ -4,7 +4,7 @@
 __author__ = 'romus'
 
 
-HOST = "192.168.0.80"
+HOST = "localhost"
 PORT = 27017
 USR = "statistic"
 PWD = "statistic"
