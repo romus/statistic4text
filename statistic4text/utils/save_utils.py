@@ -121,7 +121,8 @@ class MongoSaveUtils(SaveUtils):
                                                "dict_type": 1, "date_index": dateIndex,
                                                "merge_dict_id": self._mergeDictID})
         for key, value in data.iteritems():
-            self._dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID})
+            self._dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID,
+                                              "merge_dict_id": self._mergeDictID})
 
         return dictID
 
@@ -137,7 +138,8 @@ class MongoSaveUtils(SaveUtils):
             if word:  # обновляем частоту терминов в документе (term frequency - tf)
                 self._dataFilesCollection.update({"_id": word['_id']}, {"$inc": {"tf": value}})
             else:  # вставляем новую запись
-                self._dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID})
+                self._dataFilesCollection.insert({"word": key, "tf": value, "dict_id": dictID,
+                                                  "merge_dict_id": self._mergeDictID})
 
     def mergeDicts(self):
         self._checkExistMergeDict()
@@ -155,7 +157,8 @@ class MongoSaveUtils(SaveUtils):
                     updateData = {"$inc": {"cf": itemWord['tf'], "df": 1}}
                     self._dataFilesCollection.update({"_id": mergeWord['_id']}, updateData)
                 else:  # добавление новой записи
-                    inData = {"dict_id": self._mergeDictID, "word": itemWord['word'], "cf": itemWord['tf'], "df": 1}
+                    inData = {"dict_id": self._mergeDictID, "word": itemWord['word'], "cf": itemWord['tf'], "df": 1,
+                              "merge_dict_id": self._mergeDictID}
                     self._dataFilesCollection.insert(inData)
 
         return self._mergeDictID
@@ -165,17 +168,13 @@ class MongoSaveUtils(SaveUtils):
 
         self.deleteDicts()
         self._filesCollection.remove({"_id": self._mergeDictID})
-        self._dataFilesCollection.remove({"dict_id": self._mergeDictID})
         self._mergeDictID = None
 
     def deleteDicts(self):
         self._checkExistMergeDict()
 
-        files = self._filesCollection.find({"merge_dict_id": self._mergeDictID}, fields=["_id"])
-        if files:
-            for itemFile in files:  # удаление всех данных из созданных словарей
-                self._dataFilesCollection.remove({"dict_id": itemFile["_id"]})
-
+        # удаление данных из словарей (файлов)
+        self._dataFilesCollection.remove({"merge_dict_id": self._mergeDictID})
         # удаление самих словарей (файлов)
         self._filesCollection.remove({"merge_dict_id": self._mergeDictID})
 
